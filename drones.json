@@ -1,0 +1,26 @@
+{
+    "DJI Mavic 3": {
+        "max_wind": 12.0,
+        "max_gust": 15.0,
+        "min_temp": -10.0,
+        "max_temp": 40.0,
+        "max_humidity": 85.0,
+        "description": "Професійний квадрокоптер для зйомки"
+    },
+    "Autel EVO II": {
+        "max_wind": 10.0,
+        "max_gust": 12.0,
+        "min_temp": -5.0,
+        "max_temp": 45.0,
+        "max_humidity": 80.0,
+        "description": "Промисловий дрон з тепловізором"
+    },
+    "FPV 7 inch": {
+        "max_wind": 15.0,
+        "max_gust": 20.0,
+        "min_temp": -15.0,
+        "max_temp": 50.0,
+        "max_humidity": 70.0,
+        "description": "Швидкісний дрон-камікадзе (мінімальний захист)"
+    }
+}
