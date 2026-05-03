@@ -4,114 +4,159 @@ import requests
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 
-# Налаштування сторінки
-st.set_page_config(page_title="UAV Quantum Analysis", layout="wide")
+# 1. Налаштування сторінки
+st.set_page_config(page_title="UAV Flight Safety System", layout="wide")
 
-# Google Fonts та розширений CSS
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap');
-
+    /* Головний фон */
     .stApp {
-        background: radial-gradient(circle at top right, #001d3d, #000000);
-        font-family: 'Rajdhani', sans-serif;
+        background: radial-gradient(circle at center, #001233 0%, #000000 100%);
+        font-family: 'Segoe UI', sans-serif;
     }
-
-    /* Стилізація заголовка */
-    .main-title {
-        font-family: 'Orbitron', sans-serif;
-        color: #FFFFFF;
-        text-align: center;
-        font-size: 3.5rem;
-        text-shadow: 0 0 20px #00b4d8, 0 0 40px #00b4d8;
-        margin-bottom: 0px;
-    }
-
-    /* Картки дронів (3D ефект) */
-    .drone-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(0, 180, 216, 0.3);
-        border-radius: 20px;
-        padding: 20px;
-        text-align: center;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        cursor: pointer;
-    }
-
-    .drone-card:hover {
-        transform: translateY(-10px) scale(1.05);
-        border-color: #00b4d8;
-        box-shadow: 0 10px 30px rgba(0, 180, 216, 0.4);
-        background: rgba(0, 180, 216, 0.1);
-    }
-
-    /* Бокова панель "Cyber" */
+    
+    /* Бокова панель з неоновим ефектом */
     [data-testid="stSidebar"] {
-        background: #000814 !important;
-        border-right: 1px solid #00b4d8;
+        background: linear-gradient(180deg, #000814 0%, #001D3D 100%);
+        border-right: 2px solid #00B4D8;
+        box-shadow: 5px 0px 15px rgba(0, 180, 216, 0.2);
+    }
+    
+    /* Заголовки */
+    h1 {
+        color: #FFFFFF !important;
+        text-align: center;
+        letter-spacing: 3px;
+        font-weight: 700 !important;
+        margin-top: -20px;
+    }
+    .sub-title {
+        color: #00B4D8;
+        text-align: center;
+        letter-spacing: 1px;
+        font-size: 1em;
+        margin-bottom: 40px;
+        opacity: 0.8;
     }
 
-    /* Кнопка аналізу */
+    /* Кнопка */
     .stButton>button {
-        font-family: 'Orbitron', sans-serif;
-        background: transparent !important;
-        color: #00b4d8 !important;
-        border: 2px solid #00b4d8 !important;
-        border-radius: 0px !important;
-        clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
-        height: 50px;
-        transition: 0.3s;
+        background-color: rgba(0, 180, 216, 0.05) !important;
+        color: #FFFFFF !important;
+        border: 1px solid #00B4D8 !important;
+        border-radius: 4px;
+        width: 100%;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #00B4D8 !important;
+        box-shadow: 0 0 15px rgba(0, 180, 216, 0.5);
+        color: #000000 !important;
     }
 
-    .stButton>button:hover {
-        background: #00b4d8 !important;
-        color: black !important;
-        box-shadow: 0 0 20px #00b4d8;
+    /* Поля вводу */
+    .stTextInput>div>div>input, .stSelectbox>div>div>div {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: white !important;
+        border: 1px solid rgba(0, 180, 216, 0.2) !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# Функція завантаження (додаємо посилання на картинки)
+def calculate_safety(weather_item, params):
+    wind = weather_item['wind']['speed']
+    temp = weather_item['main']['temp']
+    hum = weather_item['main']['humidity']
+    k_wind = max(0, (params['max_wind'] - wind) / params['max_wind'])
+    k_hum = max(0, (params['max_humidity'] - hum) / params['max_humidity'])
+    if temp < params['min_temp'] or temp > params['max_temp'] or hum > params['max_humidity']:
+        return 0.0
+    return round((k_wind * 0.7) + (k_hum * 0.3), 2)
+
 def load_drones():
-    # В реальному проекті додай сюди реальні URL картинок
-    return {
-        "DJI Mavic 3": {"img": "https://cdn-icons-png.flaticon.com/512/3233/3233475.png", "max_wind": 12, "min_temp": -10, "max_temp": 40, "max_humidity": 85},
-        "Autel EVO II": {"img": "https://cdn-icons-png.flaticon.com/512/2564/2564031.png", "max_wind": 15, "min_temp": -10, "max_temp": 45, "max_humidity": 90},
-        "FPV Strike": {"img": "https://cdn-icons-png.flaticon.com/512/683/683053.png", "max_wind": 20, "min_temp": -20, "max_temp": 50, "max_humidity": 95}
-    }
+    try:
+        with open('drones.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        return {"DJI Mavic 3": {"max_wind": 12, "min_temp": -10, "max_temp": 40, "max_humidity": 85}}
 
 drones_db = load_drones()
 
-st.markdown("<h1 class='main-title'>UAV QUANTUM</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; color:#00b4d8;'>INTELLIGENT FLIGHT PREDICTION</p>", unsafe_allow_html=True)
+# Шапка сайту
+st.write("<h1>UAV SAFETY SYSTEM</h1>", unsafe_allow_html=True)
+st.write("<p class='sub-title'>МОНІТОРИНГ ТА АНАЛІЗ УМОВ ДЛЯ ПОЛЬОТІВ</p>", unsafe_allow_html=True)
 
-# Секція вибору дрона з "3D" картками
-st.write("### 🛸 ОБЕРІТЬ ПЛАТФОРМУ")
-cols = st.columns(len(drones_db))
-selected_drone = st.session_state.get('selected_drone', list(drones_db.keys())[0])
+# Бокова панель
+st.sidebar.markdown("### ⚙️ НАЛАШТУВАННЯ МІСІЇ")
 
-for i, (name, specs) in enumerate(drones_db.items()):
-    with cols[i]:
-        # Створюємо клікабельну картку через HTML
-        st.markdown(f"""
-            <div class="drone-card">
-                <img src="{specs['img']}" width="100" style="filter: drop-shadow(0 0 10px #00b4d8);">
-                <h3 style="color:white; margin-top:10px;">{name}</h3>
-                <p style="color:#00b4d8; font-size:0.8em;">Max Wind: {specs['max_wind']} m/s</p>
-            </div>
-        """, unsafe_allow_html=True)
-        if st.button(f"ОБРАТИ {name.split()[0]}", key=f"btn_{name}"):
-            st.session_state['selected_drone'] = name
+if drones_db:
+    selected_drone = st.sidebar.selectbox("МОДЕЛЬ БПЛА", list(drones_db.keys()))
+    city = st.sidebar.text_input("ЛОКАЦІЯ", "Kyiv")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📅 ЧАСОВИЙ ПРОМІЖОК")
+    start_dt = st.sidebar.datetime_input("ПОЧАТОК", datetime.now())
+    end_dt = st.sidebar.datetime_input("ЗАВЕРШЕННЯ", datetime.now() + timedelta(hours=3))
+    
+    api_key = "32b44eeafe4783aa188cc888cc0331c6" 
 
-st.sidebar.markdown(f"**ОБРАНО:** \n## {selected_drone}")
-city = st.sidebar.text_input("📍 ЛОКАЦІЯ", "Kyiv")
-start_dt = st.sidebar.datetime_input("⏱️ ПОЧАТОК", datetime.now())
-end_dt = st.sidebar.datetime_input("⏱️ ЗАВЕРШЕННЯ", datetime.now() + timedelta(hours=3))
+    if st.sidebar.button("АНАЛІЗУВАТИ БЕЗПЕКУ"):
+        url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={api_key}&units=metric&lang=ua"
+        response = requests.get(url).json()
+        
+        if "list" in response:
+            st.subheader(f"📊 ПАРАМЕТРИ ПОГОДИ: {selected_drone} | {city}")
+            
+            html_table = """
+            <table style="width:100%; border-collapse: collapse; font-family: sans-serif; color: white; border: 1px solid rgba(0, 180, 216, 0.1);">
+                <tr style="background-color: rgba(0, 180, 216, 0.1);">
+                    <th style="padding: 15px; text-align: left;">ЧАС</th>
+                    <th style="padding: 15px; text-align: center;">КОЕФІЦІЄНТ</th>
+                    <th style="padding: 15px; text-align: center;">СТАТУС</th>
+                </tr>
+            """
+            
+            total_score = 0
+            count = 0
 
-# Логіка API та таблиці (залишається твоя з попереднього кроку)
-# ... [тут твій код розрахунку] ...
+            for item in response['list'][:15]: 
+                f_dt = datetime.strptime(item['dt_txt'], '%Y-%m-%d %H:%M:%S')
+                s_dt = datetime.combine(start_dt.date(), start_dt.time())
+                e_dt = datetime.combine(end_dt.date(), end_dt.time())
+                
+                # Похибка 1.5 години для точок прогнозу
+                is_active = (s_dt - timedelta(hours=1, minutes=30)) <= f_dt <= (e_dt + timedelta(hours=1, minutes=30))
+                
+                score = calculate_safety(item, drones_db[selected_drone])
+                
+                row_opacity = "1.0" if is_active else "0.3"
+                row_bg = "rgba(0, 180, 216, 0.1)" if is_active else "transparent"
+                status_txt = "ДОЗВОЛЕНО" if is_active else "---"
+                
+                if is_active:
+                    total_score += score
+                    count += 1
 
-if st.sidebar.button("ЗАПУСТИТИ СИСТЕМУ"):
-    # (Тут твій блок requests.get та формування html_table)
-    # Додай у таблицю стиль шрифту 'Courier New' для ефекту коду
-    st.success(f"АНАЛІЗ ЗАПУЩЕНО ДЛЯ {selected_drone}")
+                html_table += f"""
+                <tr style="background-color: {row_bg}; opacity: {row_opacity}; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 12px; font-size: 0.9em;">{item['dt_txt']}</td>
+                    <td style="padding: 12px; text-align: center; font-weight: bold; color: #00B4D8;">{score}</td>
+                    <td style="padding: 12px; text-align: center; font-size: 0.8em;">{status_txt}</td>
+                </tr>
+                """
+            
+            html_table += "</table>"
+            components.html(html_table, height=450, scrolling=True)
+
+            st.markdown("---")
+            if count > 0:
+                avg = round(total_score / count, 2)
+                if avg > 0.7:
+                    st.success(f"✅ ПОЛІТ МОЖЛИВИЙ. СЕРЕДНІЙ ІНДЕКС БЕЗПЕКИ: {avg}")
+                else:
+                    st.error(f"❌ ВИСОКИЙ РИЗИК. СЕРЕДНІЙ ІНДЕКС БЕЗПЕКИ: {avg}")
+            else:
+                st.info("ℹ️ ДАНІ ВІДСУТНІ. БУДЬ ЛАСКА, РОЗШИРТЕ ЧАСОВИЙ ПРОМІЖОК У МЕНЮ ЗЛІВА.")
+        else:
+            st.error("❌ ЛОКАЦІЮ НЕ ЗНАЙДЕНО. ПЕРЕВІРТЕ НАЗВУ МІСТА.")
