@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-# 1. Налаштування сторінки та "Barbie" дизайну
+# 1. Налаштування сторінки
 st.set_page_config(page_title="UAV Safety Pink System", layout="wide")
 
 st.markdown("""
@@ -112,7 +112,7 @@ if drones_db:
             st.subheader(f"📊 Прогноз для {selected_drone} ({city})")
             st.write(f"Планований час місії: {mission_date} о {mission_time}")
 
-            # 6. HTML Таблиця (Обхід pyarrow DLL error)
+        # 6. HTML Таблиця 
             html_table = """
             <table style="width:100%; border-collapse: collapse; background-color: white; color: #C71585; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                 <tr style="background-color: #C71585; color: white;">
@@ -121,7 +121,6 @@ if drones_db:
                 </tr>
             """
             for res in results:
-                # Підсвітка рядків: якщо індекс низький — рядок ніжно-червоний
                 bg_row = "#FFF0F5" if res['Індекс'] > 0.5 else "#FFB6C1"
                 html_table += f"""
                 <tr style="background-color: {bg_row}; border-bottom: 1px solid #FFC0CB;">
