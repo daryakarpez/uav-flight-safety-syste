@@ -5,7 +5,7 @@ import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 
 # 1. Налаштування сторінки
-
+st.set_page_config(page_title="UAV Mission Planner", layout="wide")
 
 st.markdown("""
     <style>
@@ -57,6 +57,7 @@ def load_drones():
 
 drones_db = load_drones()
 
+st.write("<h1 style='text-align:center;'>ПРОГНОЗ ВІКОН ДЛЯ ПОЛЬОТІВ</h1>", unsafe_allow_html=True)
 
 # Ліва панель (БЕЗ ЗМІН ДИЗАЙНУ)
 st.sidebar.markdown("### ⚙️ НАЛАШТУВАННЯ МІСІЇ")
@@ -73,7 +74,7 @@ if st.sidebar.button("АНАЛІЗУВАТИ БЕЗПЕКУ"):
     res = requests.get(url).json()
     
     if "list" in res:
-        st.subheader(f"🛡 Рекомендовані вікна для {selected_drone}")
+        st.subheader(f"🛡️ Рекомендовані вікна для {selected_drone}")
         
         # Аналізуємо точки прогнозу та групуємо їх у "вікна"
         windows = []
@@ -99,7 +100,8 @@ if st.sidebar.button("АНАЛІЗУВАТИ БЕЗПЕКУ"):
                     rec = "Можливі пориви вітру, будьте обережні"
                 else:
                     rec = "Ризик втрати борту! Політ не рекомендується"
-             html_content += f"""
+
+                html_content += f"""
                 <div class="window-card">
                     <div style="display: flex; align-items: center;">
                         <div class="indicator {color_class}"></div>
