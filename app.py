@@ -5,7 +5,7 @@ import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 
 # 1. Налаштування сторінки
-st.set_page_config(page_title="UAV Mission Planner", layout="wide")
+
 
 st.markdown("""
     <style>
