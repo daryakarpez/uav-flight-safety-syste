@@ -69,11 +69,18 @@ st.sidebar.markdown("### ⚙️ НАЛАШТУВАННЯ МІСІЇ")
 city = st.sidebar.text_input("ЛОКАЦІЯ (назва міста укр/англ)", "Kyiv")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🛸 ПАРАМЕТРИ БПЛА")
 
 # Вибір або додавання нового
-drone_mode = st.sidebar.radio("Вибір БПЛА", ["Обрати зі списку", "Додати новий"], label_visibility="collapsed")
+st.sidebar.markdown("###  ПАРАМЕТРИ БПЛА")
 
+# Створюємо перемикач режимів
+drone_mode = st.sidebar.radio(
+    "Режим роботи", 
+    ["Обрати зі списку", "Додати новий"], 
+    label_visibility="collapsed"
+)
+
+# Якщо обрано "Додати новий" показує поля для введення
 if drone_mode == "Додати новий":
     new_name = st.sidebar.text_input("Назва моделі")
     c1, c2 = st.sidebar.columns(2)
@@ -84,20 +91,27 @@ if drone_mode == "Додати новий":
     m_hum = st.sidebar.slider("Макс. вологість (%)", 0, 100, 85)
     
     if st.sidebar.button("ЗБЕРЕГТИ МОДЕЛЬ"):
-        st.session_state.custom_drones[new_name] = {
-            "max_wind": m_wind, "max_gust": m_gust, 
-            "min_temp": mi_t, "max_temp": ma_t, "max_humidity": m_hum
-        }
-        st.sidebar.success(f"Модель {new_name} додана!")
-        st.rerun()
+        if new_name:
+            st.session_state.custom_drones[new_name] = {
+                "max_wind": m_wind, 
+                "max_gust": m_gust, 
+                "min_temp": mi_t, 
+                "max_temp": ma_t, 
+                "max_humidity": m_hum
+            }
+            st.sidebar.success(f"Модель {new_name} додана!")
+            st.rerun()
+        else:
+            st.sidebar.error("Будь ласка, введіть назву моделі")
 
-selected_drone = st.sidebar.selectbox("ОБРАНА МОДЕЛЬ", list(st.session_state.custom_drones.keys()))
-params = st.session_state.custom_drones[selected_drone]
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📅 ЧАСОВИЙ ПРОМІЖОК")
-start_dt = st.sidebar.datetime_input("ПОЧАТОК", datetime.now())
-end_dt = st.sidebar.datetime_input("ЗАВЕРШЕННЯ", datetime.now() + timedelta(hours=24))
+# 2. Якщо обрано "Обрати зі списку" показуємо лише випадаючий список
+else:
+    selected_drone = st.sidebar.selectbox(
+        "ОБРАНА МОДЕЛЬ", 
+        list(st.session_state.custom_drones.keys())
+    )
+    # Оновлення поточні параметри для аналізу
+    params = st.session_state.custom_drones[selected_drone]
 
 # Основна логіка
 if st.sidebar.button("АНАЛІЗУВАТИ БЕЗПЕКУ"):
