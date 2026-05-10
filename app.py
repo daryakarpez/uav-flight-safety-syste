@@ -53,8 +53,17 @@ def get_safety_status(weather_item, params):
 
 # 2. Управління даними БПЛА
 if 'custom_drones' not in st.session_state:
-    st.session_state.custom_drones = {"Autel EVO II": {"max_wind": 12.0, "max_gust": 17.0, "min_temp": -10.0, "max_temp": 45.0, "max_humidity": 90.0}}
-
+    st.session_state.custom_drones = {
+        "Autel EVO II": {
+            "max_wind": 12.0, "max_gust": 17.0, "min_temp": -10.0, "max_temp": 45.0, "max_humidity": 90.0
+        },
+        "DJI Mavic 3": {
+            "max_wind": 12.0, "max_gust": 15.0, "min_temp": -10.0, "max_temp": 40.0, "max_humidity": 85.0
+        },
+        "FPV Custom 7": {
+            "max_wind": 15.0, "max_gust": 20.0, "min_temp": -15.0, "max_temp": 50.0, "max_humidity": 95.0
+        }
+    }
 # Ліва панель
 st.sidebar.markdown("### ⚙️ НАЛАШТУВАННЯ МІСІЇ")
 city = st.sidebar.text_input("ЛОКАЦІЯ (назва міста укр/англ)", "Kyiv")
