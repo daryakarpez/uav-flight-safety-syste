@@ -3,6 +3,7 @@ import json
 import requests
 import streamlit.components.v1 as components
 from datetime import datetime, timedelta
+import plotly.graph_objects as go  # Додано для графіків
 
 # ==========================================
 # 1. КОНФІГУРАЦІЯ СТОРІНКИ ТА СТИЛІЗАЦІЯ
@@ -34,6 +35,16 @@ st.markdown("""
     .bg-green { background-color: #2ECC71; box-shadow: 0 0 8px #2ECC71; }
     .bg-yellow { background-color: #F1C40F; box-shadow: 0 0 8px #F1C40F; }
     .bg-red { background-color: #E74C3C; box-shadow: 0 0 8px #E74C3C; }
+    
+    /* Стиль для попередження про часові проміжки */
+    .time-info {
+        background: rgba(0, 180, 216, 0.1);
+        border-left: 4px solid #00B4D8;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -118,6 +129,16 @@ if analyze_btn:
     try:
         res = requests.get(url).json()
         if "list" in res:
+            # ПОЛЕ З ПОПЕРЕДЖЕННЯМ ПРО ЧАСОВИЙ ПРОМІЖОК
+            st.markdown("""
+                <div class="time-info">
+                    <strong>ℹ️ Чому крок прогнозу становить 3 години?</strong><br>
+                    Система використовує дані глобальних метеорологічних моделей (GFS/ECMWF) через API OpenWeather. 
+                    Безкоштовні та стандартні наукові профілі надають дані з дискретністю 3 години. 
+                    Це оптимальний баланс між точністю прогнозування фронтальних змін та обчислювальною потужністю серверів.
+                </div>
+                """, unsafe_allow_html=True)
+
             st.subheader(f"🛡️ Прогноз безпеки для {selected_drone}")
             
             windows = []
@@ -149,7 +170,6 @@ if analyze_btn:
                 for w in windows:
                     color_class = f"bg-{w['status'].lower()}"
                     
-                    # Логіка текстових описів
                     reasons = []
                     if w['wind'] > params['max_wind']: reasons.append("Високий вітер")
                     if w['gust'] > params.get('max_gust', params['max_wind']+5): reasons.append("Сильні пориви")
@@ -177,17 +197,20 @@ if analyze_btn:
                     </div>
                     """
                 
-                components.html(f'<div style="font-family: sans-serif;">{header_html}{rows_html}</div>', height=550, scrolling=True)
+                components.html(f'<div style="font-family: sans-serif;">{header_html}{rows_html}</div>', height=400, scrolling=True)
                 
-                # Короткий підсумок
-                best = [w['time'].strftime('%H:%M') for w in windows if w['status'] == "GREEN"]
-                if best:
-                    st.success(f"✅ Оптимальні вікна для старту: {', '.join(best[:5])}")
-                else:
-                    st.warning("⚠️ Немає ідеальних умов. Зверніть увагу на проміжки з помірним ризиком.")
-            else:
-                st.info("ℹ️ Дані для обраного періоду відсутні (максимум 5 днів вперед).")
-        else:
-            st.error("❌ Місто не знайдено.")
-    except Exception as e:
-        st.error(f"❌ Помилка: {e}")
+                # ГРАФІК «ЯПОНСЬКІ СВІЧКИ» (ВІТЕР ТА ПОРИВИ)
+                st.markdown("### 📊 Динаміка вітрового навантаження")
+                
+                fig = go.Figure(data=[go.Candlestick(
+                    x=[w['time'] for w in windows],
+                    open=[w['wind'] for w in windows],
+                    high=[w['gust'] for w in windows],
+                    low=[w['wind'] * 0.8 for w in windows], # Умовний мінімум для візуалізації
+                    close=[w['gust'] for w in windows],
+                    increasing_line_color='#00B4D8', decreasing_line_color='#E74C3C'
+                )])
+
+                fig.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor
