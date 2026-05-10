@@ -153,31 +153,55 @@ if analyze_btn:
                         "wind": item['wind']['speed'], "gust": item['wind'].get('gust', item['wind']['speed'])
                     })
             
-            if windows:
+           if windows:
                 html_content = ""
                 for w in windows:
                     color_class = f"bg-{w['status'].lower()}"
-                    # Текстова рекомендація
-                    rec = "ОПТИМАЛЬНО" if w['status'] == "GREEN" else "ОБЕРЕЖНО" if w['status'] == "YELLOW" else "ЗАБОРОНЕНО"
+                    
+                    # Логіка для визначення причин обмеження (колонка 3)
+                    reasons = []
+                    # Перевіряємо дані конкретного інтервалу через початковий 'item' з API
+                    # Для цього нам треба передати item у цикл або перевірити умови знову:
+                    if w['wind'] > params['max_wind']: reasons.append("Вітер")
+                    if w['gust'] > params.get('max_gust', params['max_wind']+5): reasons.append("Пориви")
+                    # (Примітка: для повної точності температуру та вологість можна також витягнути з 'item')
+                    
+                    reason_text = ", ".join(reasons) if reasons else "У межах норми"
+                    if w['status'] == "RED" and not reasons: reason_text = "Критичні умови"
 
                     html_content += f"""
-                    <div class="window-card">
+                    <div class="window-card" style="display: grid; grid-template-columns: 1.5fr 1fr 2fr 1.5fr; gap: 10px; text-align: left;">
                         <div style="display: flex; align-items: center;">
                             <div class="indicator {color_class}"></div>
                             <div>
-                                <div style="color: white; font-weight: bold;">{w['time'].strftime('%H:%M')} — {(w['time']+timedelta(hours=3)).strftime('%H:%M')}</div>
-                                <div style="color: #00B4D8; font-size: 0.8em;">{w['time'].strftime('%d.%m.%Y')}</div>
+                                <div style="color: white; font-weight: bold; font-size: 0.95em;">
+                                    {w['time'].strftime('%H:%M')} — {(w['time']+timedelta(hours=3)).strftime('%H:%M')}
+                                </div>
+                                <div style="color: #00B4D8; font-size: 0.75em;">{w['time'].strftime('%d.%m.%Y')}</div>
                             </div>
                         </div>
-                        <div style="color: rgba(255,255,255,0.8); font-size: 0.9em;">{rec}</div>
-                        <div style="text-align: right;">
-                            <div style="color: white; font-size: 0.8em;">💨 {w['wind']} (п. {w['gust']}) м/с</div>
-                            <div style="color: #00B4D8; font-size: 0.8em;">🛡️ {int(w['score']*100)}%</div>
+
+                        <div style="display: flex; flex-direction: column; justify-content: center;">
+                            <div style="color: #00B4D8; font-weight: bold; font-size: 1.1em;">{int(w['score']*100)}%</div>
+                            <div style="color: rgba(255,255,255,0.5); font-size: 0.7em;">БЕЗПЕКА</div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; color: rgba(255,255,255,0.8); font-size: 0.85em; padding-right: 10px;">
+                            <span>{reason_text}</span>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; justify-content: center; text-align: right; border-left: 1px solid rgba(0,180,216,0.2); padding-left: 10px;">
+                            <div style="color: white; font-size: 0.9em;">💨 {w['gust']} м/с</div>
+                            <div style="color: rgba(255,255,255,0.5); font-size: 0.7em;">ПОРИВИ</div>
                         </div>
                     </div>
                     """
-                components.html(f"<div style='font-family: sans-serif;'>{html_content}</div>", height=500, scrolling=True)
-                
+                # Відображення таблиці
+                components.html(f"""
+                    <div style="font-family: 'Segoe UI', sans-serif; padding: 10px;">
+                        {html_content}
+                    </div>
+                """, height=550, scrolling=True)
                 # Фінальний вердикт
                 best_times = [w['time'].strftime('%H:%M') for w in windows if w['status'] == "GREEN"]
                 if best_times:
